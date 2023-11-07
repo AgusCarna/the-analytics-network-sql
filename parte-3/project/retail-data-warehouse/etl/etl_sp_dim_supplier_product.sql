@@ -5,8 +5,9 @@ DECLARE
 BEGIN
   usuario := current_user; 
   with cte as (
-  select *
+  	select *
 	from stg.suppliers
+	where is_primary is true
   )
 insert into dim.suppliers(product_id, name, is_primary)
 select * from cte where is_primary is true
