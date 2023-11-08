@@ -9,7 +9,7 @@ BEGIN
 	from stg.suppliers
 	where is_primary is true
   )
-insert into dim.suppliers(product_id, name, is_primary)
+insert into dim.supplier_product(product_id, name, is_primary)
 select * from cte where is_primary is true
  -- on conflict (product_code) do update
  -- set product_code = excluded.product_code;
