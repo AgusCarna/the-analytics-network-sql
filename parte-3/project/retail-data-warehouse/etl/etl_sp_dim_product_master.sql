@@ -5,7 +5,16 @@ DECLARE
 BEGIN
   usuario := current_user; 
   with cte as (
-  select *,
+  select product_code, name, category, subcategory, subsubcategory,
+	CASE
+        WHEN material IS NULL THEN 'UNKNOWN'
+        ELSE initcap (material)
+	end as material,
+	CASE
+        WHEN color IS NULL THEN 'UNKNOWN'
+        ELSE initcap (color)
+	END AS color,
+	origen, ean, is_active, has_bluetooth, size,
 	    CASE 
         WHEN lower(name) LIKE '%samsung%' THEN 'Samsung'
         WHEN lower(name) LIKE '%philips%' THEN 'Phillips'
@@ -13,13 +22,7 @@ BEGIN
         WHEN lower(name) LIKE 'jbl%' THEN 'JBL'
         WHEN lower(name) LIKE '%motorola%' THEN 'Motorola'
         WHEN lower(name) LIKE 'tommy%' THEN 'TH'
-        ELSE 'Unknown' end as brand,
-	  CASE
-        WHEN material IS NULL THEN 'UNKNOWN'
-        ELSE initcap (material),
-	  CASE
-        WHEN color IS NULL THEN 'UNKNOWN'
-        ELSE initcap (color),
+        ELSE 'Unknown' end as brand
 	  from stg.product_master
   )
 insert into dim.product_master(product_code, name, category, subcategory, subsubcategory, material, color, origen, ean, is_active, has_bluetooth, size, brand)
