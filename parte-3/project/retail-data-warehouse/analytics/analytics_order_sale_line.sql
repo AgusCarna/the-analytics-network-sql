@@ -7,7 +7,7 @@ select * into analytics.order_sale_line from viz.order_sale_line
 with aux_egresos as (
 	select sh.year,sh.store_id, sh.item_id,sh.quantity, c.product_cost_usd, 
 		sh.quantity*c.product_cost_usd as egreso_total
-	from dim.shrinkage sh
+	from fct.shrinkage sh
 	left join dim.cost c
 		on c.product_code = sh.item_id
 	order by sh.year,sh.store_id,sh.item_id
