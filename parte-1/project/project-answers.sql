@@ -89,11 +89,17 @@ with consolidado as (
 ),
 aux_store as (
 	select 
-		año, mes, fecha_completa, store,
-		sum(((initial + final)*1.00)/2) as inv_prom,
-		sum((((initial + final)*1.00)/2)*product_cost_usd) as cost_inv_prom
-	from consolidado
-	group by 1,2,3,4
+        date_trunc('year',inv.date ) as año, 
+        date_trunc('month',inv.date ) as mes,
+        store_id,
+        sum((initial + final)/2) as inv_prom,
+        sum(((initial + final)/2)*product_cost_usd) as cost_inv_prom
+    from stg.inventory inv 
+    left join stg.cost cos 
+		on inv.item_id = cos.product_code 
+    left join stg.product_master pm 
+		on inv.item_id = pm.product_code
+    group by 1,2,3
 ),
 aux_store2 as (
 	select
@@ -206,50 +212,41 @@ with aux_dev as (
 	select
 		extract(year from rm.date) as año, 
 		extract(month from rm.date) as mes,
-		rm.order_id, rm.item, rm.quantity, c.product_cost_usd
+		rm.order_id, rm.item, rm.quantity, --as cant_dev,
+		sum(ols.sale/ols.quantity) as costo_uni
 	from stg.return_movements as rm
-	left join stg.cost as c
-		on rm.item = c.product_code
-	group by 1,2,3,4,5,6
-	order by 1,2,3,4,5,6
+	left join stg.order_line_sale as ols
+		on ols.order_number = rm.order_id
+	group by 1,2,3,4,5
+	order by 1,2,3,4,5
 )
 	
 select
 	año, mes, 
 	(sum (quantity)) as quantity,
-	(sum (quantity*product_cost_usd)) as returned_sales_usd
+	(sum (quantity*costo_uni)) as returned_sales_usd
 from aux_dev
 group by 1,2 
 order by 1,2
-	
 
 
 -- Tiendas
 -- - Ratio de conversion. Cantidad de ordenes generadas / Cantidad de gente que entra
-with conteo_total as (
-	SELECT store_id, TO_DATE(TO_CHAR(to_date(date::text, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD') AS date, traffic
-	FROM stg.market_count
-	UNION ALL
-	SELECT store_id, TO_DATE(date,'YYYY-MM-DD') as date, traffic
-	FROM stg.super_store_count
-),
-aux_conteo as (
-	select
-		extract(year from ols.date) as año, 
-		extract(month from ols.date) as mes,
-		extract(day from ols.date) as dia,
-		((count (distinct ols.order_number))*1.00) as count_order,
-		((sum(traffic))*1.00) as traffic
-	from stg.order_line_sale as ols
-	left join conteo_total as ct
-		on ols.store = ct.store_id
-		and ols.date = ct.date
-	group by 1,2,3
-	order by 1,2,3
+with stg_traffic as (
+	select store_id, cast(cast(date as text) as date) as date, traffic from stg.market_count
+	union all
+	select store_id, cast(date as date) as date, traffic from stg.super_store_count
+	)
+, stg_orders as (
+	select store, date, count(distinct order_number) nbr_orders
+	from stg.order_line_sale ols
+	group by 1,2
 )
-
-select  
-	año, mes,
-	((sum (count_order))/(sum(traffic))) as cvr 
-from aux_conteo
-group by 1, 2
+select 
+    date(date_trunc('month', t.date)) as month,
+    sum(nbr_orders)/sum(traffic) as cvr
+from stg_traffic t 
+left join stg_orders o 
+	on t.store_id = o.store 
+	and t.date = o.date
+group by 1
