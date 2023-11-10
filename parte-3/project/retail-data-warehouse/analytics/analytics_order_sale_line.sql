@@ -1,15 +1,17 @@
---Copiar directo de viz.order_sale_line
-
-select * into analytics.order_sale_line from viz.order_sale_line
-
---si la creamos de 0
+create or replace procedure analytics.sp_order_sale_line()
+language plpgsql as $$
+truncate analytics.order_sale_line
+DECLARE
+  usuario varchar(10) := current_user ;
+BEGIN
+  usuario := current_user; 
 
 with aux_egresos as (
 	select sh.year,sh.store_id, sh.item_id,sh.quantity, c.product_cost_usd, 
 		sh.quantity*c.product_cost_usd as egreso_total
 	from fct.shrinkage sh
 	left join dim.cost c
-		on c.product_code = sh.item_id
+		on c.product_id = sh.item_id
 	order by sh.year,sh.store_id,sh.item_id
 	
 ), 
@@ -17,7 +19,7 @@ with aux_egresos as (
 
 aux_philips as (
 	select
-		ols.order_number,pm.brand,
+		ols.order_id,pm.brand,
 		extract (year from date) as year,
 		sum(quantity) over(partition by extract (year from date)),
 		case
@@ -30,9 +32,9 @@ aux_philips as (
 		end as ingreso_extra
 	from fct.order_line_sale as ols
 	left join dim.product_master as pm
-		on ols.product = pm.product_code
+		on ols.product_id = pm.product_id
 	where pm.brand = 'Philips'
-)
+), cte as (
 
 	select
 	
@@ -69,14 +71,14 @@ aux_philips as (
 			then fx.fx_rate_usd_uru
 			else ols.sale
 			end as cotizacion,
-    (analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as sales_usd,
+    		(analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as sales_usd,
 		(analytics.conversion(ols.currency, ols.promotion, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as promotion_usd,
 		(analytics.conversion(ols.currency, ols.credit, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as credit_usd,
 		(analytics.conversion(ols.currency, ols.tax, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as tax_usd,
 		(analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as net_sales_usd,
 		(((analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)-coalesce(ols.tax,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)))-(c.product_cost_usd*ols.quantity)) as margin_usd,
 	
-	c.product_cost_usd, ols.order_number, rm.quantity as devoluciones,
+	c.product_cost_usd, ols.order_id, rm.quantity as devoluciones,
 	inv.initial, inv.final,ols.quantity,
 
 --ingresos extras
@@ -93,30 +95,35 @@ aux_philips as (
 	into analytics.order_sale_line
 	from fct.order_line_sale as ols
 	left join dim.product_master as pm
-		on pm.product_code = ols.product
+		on pm.product_id = ols.product_id
 	left join dim.cost as c
-		on c.product_code = ols.product
+		on c.product_id = ols.product_id
 	left join fct.fx_rate as fx
 		on date_trunc('month',ols.date) = fx.month
 	left join fct.inventory as inv
-		on inv.item_id = ols.product
+		on inv.item_id = ols.product_id
 		and inv.date = ols.date
 		and inv.store_id = ols.store
 	left join fct.return_movements as rm
-		on rm.order_id = ols.order_number
-		and rm.item = ols.product
+		on rm.order_id = ols.order_id
+		and rm.product_id = ols.product_id
 		and rm.movement_id = 2
 	left join dim.supplier_product as sup
-		on sup.product_id = ols.product
+		on sup.product_id = ols.product_id
 		and sup.is_primary is true
 	left join dim.store_master as sm
 		on sm.store_id = ols.store
 	left join aux_philips as ap
-		on ap.order_number = ols.order_number
+		on ap.order_id = ols.order_id
 		and ap.brand = pm.brand
 		and pm.brand = 'Philips'
 		and ap.year = extract(year from ols.date)
 	left join aux_egresos as ae
 		on ae.year = extract(year from ols.date)
 		and ae.store_id = ols.store
-		and ae.item_id = ols.product
+		and ae.item_id = ols.product_id
+)
+select * into analytics.order_sale_line from cte 
+  call etl.log(current_date, 'order_sale_line','usuario'); -- SP dentro del SP order_sale_line para dejar log
+END;
+$$;
