@@ -13,6 +13,3 @@ insert into etl.log (fecha,tabla,usuario)
 select parametro_fecha, parametro_tabla, parametro_usuario
 ; 
 $$;
-
-call etl.log('2023-10-31','dim.cost','usuario')
-select * from etl.log
