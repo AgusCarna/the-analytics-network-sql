@@ -33,5 +33,12 @@ left join fct.fx_rate as fx
   )
 insert into analytics.return select * from cte;
   call etl.log('return', current_date, 'sp_return','usuario'); -- SP dentro del SP return para dejar log
+	IF 
+	(select order_number, return_id, count(1)
+	from cte
+	group by 1,2
+	having count(1) > 1) 
+	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
+	END IF;
 END;
 $$;
