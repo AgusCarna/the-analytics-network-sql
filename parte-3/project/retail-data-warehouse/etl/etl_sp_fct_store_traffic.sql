@@ -11,6 +11,6 @@ BEGIN
   )
 insert into fct.store_traffic(store_id, date, traffic)
 select * from cte
-  call etl.log(current_date, 'store_traffic','usuario'); -- SP dentro del SP store_traffic para dejar log
+  call etl.log('fct.store_traffic',current_date, 'sp_fct_store_traffic','usuario'); -- SP dentro del SP store_traffic para dejar log
 END;
 $$;
