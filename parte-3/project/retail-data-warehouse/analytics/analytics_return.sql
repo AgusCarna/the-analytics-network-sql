@@ -36,7 +36,7 @@ insert into analytics.return select * from cte;
 	IF 
 	(select order_number, return_id, count(1)
 	from cte
-	group by 1,2
+	group by order_number, return_id
 	having count(1) > 1) 
 	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
 	END IF;
