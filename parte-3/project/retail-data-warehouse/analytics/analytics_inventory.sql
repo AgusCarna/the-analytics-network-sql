@@ -4,7 +4,8 @@ truncate analytics.inventory
 DECLARE
   usuario varchar(10) := current_user ;
 BEGIN
-  usuario := current_user; 
+  usuario := current_user;
+  truncate analytics.inventory;
   with cte as (
 
 select 
@@ -27,7 +28,7 @@ left join dim.cost as c
 	on c.product_id = i.item_id
 
   )
-select * into analytics.inventory from cte 
-  call etl.log(current_date, 'inventory','usuario'); -- SP dentro del SP inventory para dejar log
+insert into analytics.inventory select * from cte; 
+  call etl.log('inventory',current_date, 'sp_inventory','usuario'); -- SP dentro del SP inventory para dejar log
 END;
 $$;
