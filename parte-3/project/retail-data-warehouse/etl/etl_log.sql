@@ -7,9 +7,9 @@ CREATE TABLE etl.log
 					 )
 
 --/Creo stored procedure/
-create or replace procedure etl.log(parametro_fecha date, parametro_tabla varchar(10), parametro_usuario varchar(10))
+create or replace procedure etl.log(parametro_tabla VARCHAR(30), parametro_fecha date, parametro_sp varchar(10), parametro_usuario varchar(10))
 language sql as $$
-insert into etl.log (fecha,tabla,usuario) 
-select parametro_fecha, parametro_tabla, parametro_usuario
+insert into log.table_updates (table_name, date, stored_procedure, username) 
+select parametro_tabla, parametro_fecha, parametro_tabla, parametro_usuario
 ; 
 $$;
