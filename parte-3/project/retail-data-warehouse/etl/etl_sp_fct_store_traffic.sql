@@ -10,7 +10,7 @@ BEGIN
     where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
   )
 insert into fct.store_traffic(store_id, date, traffic)
-select * from cte
+select * from cte;
   call etl.log('fct.store_traffic',current_date, 'sp_fct_store_traffic','usuario'); -- SP dentro del SP store_traffic para dejar log
 END;
 $$;
