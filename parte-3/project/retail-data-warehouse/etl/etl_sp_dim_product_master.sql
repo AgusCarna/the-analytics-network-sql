@@ -29,6 +29,6 @@ insert into dim.product_master(product_code, name, category, subcategory, subsub
 select * from cte
   on conflict (product_code) do update
   set product_code = excluded.product_code;
-  call etl.log(current_date, 'product_master','usuario'); -- SP dentro del SP product_master para dejar log
+  call etl.log('dim.product_master',current_date, 'sp_dim_product_master','usuario'); -- SP dentro del SP product_master para dejar log
 END;
 $$;
