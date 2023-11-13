@@ -78,7 +78,7 @@ aux_philips as (
 		(analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as net_sales_usd,
 		(((analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)-coalesce(ols.tax,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)))-(c.product_cost_usd*ols.quantity)) as margin_usd,
 	
-	c.product_cost_usd, ols.order_id, rm.quantity as devoluciones,
+	c.product_cost_usd, ols.order_id, ols.product_id, rm.quantity as devoluciones,
 	inv.initial, inv.final,ols.quantity,
 
 --ingresos extras
@@ -124,5 +124,12 @@ aux_philips as (
 )
 	insert into analytics.order_sale_line select * from cte;
   call etl.log('order_sale_line',current_date, 'sp_order_sale_line','usuario'); -- SP dentro del SP order_sale_line para dejar log
+	IF 
+	(select order_id, product_id, count(1)
+	from cte
+	group by order_id, product_id
+	having count(1) > 1) 
+	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
+	END IF;
 END;
 $$;
