@@ -1,11 +1,11 @@
 create or replace procedure analytics.sp_order_sale_line()
 language plpgsql as $$
-truncate analytics.order_sale_line
 DECLARE
   usuario varchar(10) := current_user ;
 BEGIN
   usuario := current_user; 
-
+  truncate analytics.order_sale_line;
+  
 with aux_egresos as (
 	select sh.year,sh.store_id, sh.item_id,sh.quantity, c.product_cost_usd, 
 		sh.quantity*c.product_cost_usd as egreso_total
@@ -36,7 +36,7 @@ aux_philips as (
 	where pm.brand = 'Philips'
 ), cte as (
 
-	select
+	select 
 	
 -- tienda
 	sm.country, sm.province, sm.name as nombre_tienda,
@@ -92,7 +92,6 @@ aux_philips as (
 	(((ae.quantity*c.product_cost_usd)*1.00)/((sum(ols.quantity) over(partition by ae.year,ae.store_id,ae.item_id ))*1.00)) as egreso_extra
 
 --joins
-	into analytics.order_sale_line
 	from fct.order_line_sale as ols
 	left join dim.product_master as pm
 		on pm.product_id = ols.product_id
@@ -123,7 +122,7 @@ aux_philips as (
 		and ae.store_id = ols.store
 		and ae.item_id = ols.product_id
 )
-select * into analytics.order_sale_line from cte 
-  call etl.log(current_date, 'order_sale_line','usuario'); -- SP dentro del SP order_sale_line para dejar log
+	insert into analytics.order_sale_line select * from cte;
+  call etl.log('order_sale_line',current_date, 'sp_order_sale_line','usuario'); -- SP dentro del SP order_sale_line para dejar log
 END;
 $$;
