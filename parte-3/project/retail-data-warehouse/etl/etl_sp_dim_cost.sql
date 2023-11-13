@@ -10,8 +10,6 @@ BEGIN
   )
 insert into dim.cost(product_id, cost_usd)
 select * from cte
-  --on conflict (product_code) do update
-  --set product_code = excluded.product_code;
-  call etl.log(current_date, 'cost','usuario'); -- SP dentro del SP cost para dejar log
+  call etl.log('dim.cost',current_date, 'sp_dim_cost','usuario'); -- SP dentro del SP cost para dejar log
 END;
 $$;
