@@ -11,6 +11,6 @@ BEGIN
   )
 insert into fct.shrinkage (year, store_id, item_id, quantity)
 select * from cte
-  call etl.log(current_date, 'shrinkage','usuario'); -- SP dentro del SP shrinkage para dejar log
+  call etl.log('fct.shrinkage',current_date, 'sp_fct_shrinkage','usuario'); -- SP dentro del SP shrinkage para dejar log
 END;
 $$;
