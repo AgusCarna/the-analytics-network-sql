@@ -1,6 +1,5 @@
 create or replace procedure analytics.sp_inventory()
 language plpgsql as $$
-truncate analytics.inventory
 DECLARE
   usuario varchar(10) := current_user ;
 BEGIN
