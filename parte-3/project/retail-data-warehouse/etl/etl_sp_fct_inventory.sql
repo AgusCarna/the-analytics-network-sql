@@ -11,6 +11,6 @@ BEGIN
   )
 insert into fct.inventory (date, store_id, item_id, initial, final)
 select * from cte
-  call etl.log(current_date, 'inventory','usuario'); -- SP dentro del SP inventory para dejar log
+  call etl.log('fct.inventory',current_date, 'sp_fct_inventory','usuario'); -- SP dentro del SP inventory para dejar log
 END;
 $$;
