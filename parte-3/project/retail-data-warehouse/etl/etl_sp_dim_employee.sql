@@ -18,7 +18,7 @@ BEGIN
 	    from stg.employees
   )
 insert into dim.employee(id, name, surname, start_date, end_date, duration, phone, country, province, store_id, position, active)
-select * from cte
+select * from cte;
   call etl.log('dim.employee',current_date, 'sp_dim_employee','usuario'); -- SP dentro del SP employee para dejar log
 END;
 $$;
