@@ -29,5 +29,12 @@ left join dim.cost as c
   )
 insert into analytics.inventory select * from cte; 
   call etl.log('inventory',current_date, 'sp_inventory','usuario'); -- SP dentro del SP inventory para dejar log
+	IF 
+	(select product_id, date, store_id, count(1)
+	from cte
+	group by product_id, date, store_id
+	having count(1) > 1) 
+	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
+	END IF;
 END;
 $$;
