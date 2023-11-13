@@ -1,10 +1,10 @@
 create or replace procedure analytics.sp_return()
 language plpgsql as $$
-truncate analytics.return
 DECLARE
   usuario varchar(10) := current_user ;
 BEGIN
   usuario := current_user; 
+  truncate analytics.return;
   with cte as (
 
 select 
@@ -31,7 +31,7 @@ left join fct.fx_rate as fx
 	on (cast((date_trunc('month',ols.date)) as date)) = fx.month
 
   )
-select * into analytics.return from cte 
-  call etl.log(current_date, 'return','usuario'); -- SP dentro del SP return para dejar log
+insert into analytics.return select * from cte;
+  call etl.log('return', current_date, 'sp_return','usuario'); -- SP dentro del SP return para dejar log
 END;
 $$;
