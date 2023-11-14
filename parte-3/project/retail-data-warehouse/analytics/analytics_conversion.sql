@@ -1,4 +1,4 @@
---Creación función de conversión
+/*Creación función de conversión*/
 create function analytics.conversion(currency character varying(3), valor numeric, rate_peso numeric, rate_eur numeric, rate_uru numeric) 
 returns numeric as
 $$
