@@ -1,14 +1,15 @@
 create or replace procedure analytics.sp_order_sale_line()
 language plpgsql as $$
-DECLARE
+declare
   usuario varchar(10) := current_user ;
-BEGIN
+begin
   usuario := current_user; 
   truncate analytics.order_sale_line;
   
 with aux_egresos as (
-	select sh.year,sh.store_id, sh.item_id,sh.quantity, c.product_cost_usd, 
-		sh.quantity*c.product_cost_usd as egreso_total
+	select 
+		sh.year,sh.store_id, sh.item_id,sh.quantity, c.product_cost_usd 
+		,sh.quantity*c.product_cost_usd as egreso_total
 	from fct.shrinkage sh
 	left join dim.cost c
 		on c.product_id = sh.item_id
@@ -39,30 +40,30 @@ aux_philips as (
 	select 
 	
 -- tienda
-	sm.country, sm.province, sm.name as nombre_tienda,
+	sm.country, sm.province, sm.name as nombre_tienda
 	
 --SKU
-	pm.category, pm.subcategory, pm.subsubcategory, sup.name as proveedor,
+	, pm.category, pm.subcategory, pm.subsubcategory, sup.name as proveedor
 	
 --atributos de fecha
-	extract(day from ols.date) as day,
-	extract(month from ols.date) as month,
-	extract(year from ols.date) as year,
-	case
+	, extract(day from ols.date) as day
+	, extract(month from ols.date) as month
+	, extract(year from ols.date) as year
+	, case
 		when extract (month from ols.date) in (1) then concat ('FY',cast(((extract(year from ols.date))-1) as text))
 		else concat ('FY',cast((extract(year from ols.date)) as text))
-		end as fiscal_year_label,
-	case
+		end as fiscal_year_label
+	, case
 		when extract (month from ols.date) in (2,3,4) then 'Q1'
 		when extract (month from ols.date) in (5,6,7) then 'Q2'
 		when extract (month from ols.date) in (8,9,10) then 'Q3'
 		when extract (month from ols.date) in (11,12,1) then 'Q4'
-		end as fiscal_quarter_label,
+		end as fiscal_quarter_label
 		
 --pasaje a USD
 	
 	
-		case
+	, case
 			when ols.currency = 'ARS'
 			then fx.fx_rate_usd_peso
 			when ols.currency = 'EUR'
@@ -70,26 +71,26 @@ aux_philips as (
 			when ols.currency = 'URU'
 			then fx.fx_rate_usd_uru
 			else ols.sale
-			end as cotizacion,
-    		(analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as sales_usd,
-		(analytics.conversion(ols.currency, ols.promotion, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as promotion_usd,
-		(analytics.conversion(ols.currency, ols.credit, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as credit_usd,
-		(analytics.conversion(ols.currency, ols.tax, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as tax_usd,
-		(analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as net_sales_usd,
-		(((analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)-coalesce(ols.tax,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)))-(c.product_cost_usd*ols.quantity)) as margin_usd,
+			end as cotizacion
+    	, (analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as sales_usd
+	, (analytics.conversion(ols.currency, ols.promotion, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as promotion_usd
+	, (analytics.conversion(ols.currency, ols.credit, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as credit_usd
+	, (analytics.conversion(ols.currency, ols.tax, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as tax_usd
+	, (analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)) as net_sales_usd
+	, (((analytics.conversion(ols.currency, (ols.sale-coalesce(ols.promotion,0)-coalesce(ols.tax,0)), fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru)))-(c.product_cost_usd*ols.quantity)) as margin_usd
 	
-	c.product_cost_usd, ols.order_id, ols.product_id, rm.quantity as devoluciones,
-	inv.initial, inv.final,ols.quantity,
+	, c.product_cost_usd, ols.order_id, ols.product_id, rm.quantity as devoluciones
+	, inv.initial, inv.final,ols.quantity
 
 --ingresos extras
 
-	ap.ingreso_extra, pm.brand,
+	, ap.ingreso_extra, pm.brand
 
 --egresos extras
 	
-	ae.egreso_total,
-	sum(ols.quantity) over(partition by ae.year,ae.store_id,ae.item_id ),
-	(((ae.quantity*c.product_cost_usd)*1.00)/((sum(ols.quantity) over(partition by ae.year,ae.store_id,ae.item_id ))*1.00)) as egreso_extra
+	, ae.egreso_total
+	, sum(ols.quantity) over(partition by ae.year,ae.store_id,ae.item_id )
+	, (((ae.quantity*c.product_cost_usd)*1.00)/((sum(ols.quantity) over(partition by ae.year,ae.store_id,ae.item_id ))*1.00)) as egreso_extra
 
 --joins
 	from fct.order_line_sale as ols
@@ -125,11 +126,11 @@ aux_philips as (
 	insert into analytics.order_sale_line select * from cte;
   call etl.log('order_sale_line',current_date, 'sp_order_sale_line','usuario'); -- SP dentro del SP order_sale_line para dejar log
 	IF 
-	(select order_id, product_id, count(1)
-	from cte
-	group by order_id, product_id
-	having count(1) > 1) 
-	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
+		(select order_id, product_id, count(1)
+		from cte
+		group by order_id, product_id
+		having count(1) > 1) 
+		is not null the raise exception 'error';
 	END IF;
 END;
 $$;
