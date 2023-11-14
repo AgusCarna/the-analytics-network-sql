@@ -1,8 +1,8 @@
 create or replace procedure analytics.sp_return()
 language plpgsql as $$
-DECLARE
+declare
   usuario varchar(10) := current_user ;
-BEGIN
+begin
   usuario := current_user; 
   truncate analytics.return;
   with cte as (
@@ -10,13 +10,13 @@ BEGIN
 select 
 
 --atributos devoluciones
-	rm.order_id, rm.return_id, rm.quantity, rm.date,
+	rm.order_id, rm.return_id, rm.quantity, rm.date
 --atributos producto
-	pm.product_id, pm.name as name_prod, pm.category, pm.subcategory, pm.subsubcategory, pm.material, pm.color, pm.origin, pm.ean, pm.is_active, pm.has_bluetooth, pm.size, pm.brand,
+	, pm.product_id, pm.name as name_prod, pm.category, pm.subcategory, pm.subsubcategory, pm.material, pm.color, pm.origin, pm.ean, pm.is_active, pm.has_bluetooth, pm.size, pm.brand
 --atributos tienda
-	sm.store_id, sm.country, sm.province, sm.city, sm.address, sm.name as name_store, sm.type, sm.start_date, sm.latitude, sm.longitude,
+	, sm.store_id, sm.country, sm.province, sm.city, sm.address, sm.name as name_store, sm.type, sm.start_date, sm.latitude, sm.longitude
 --valor de venta producto retornado	
-((analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru))/ols.quantity) as cost_dev_usd
+	, ((analytics.conversion(ols.currency, ols.sale, fx.fx_rate_usd_peso, fx.fx_rate_usd_eur, fx.fx_rate_usd_uru))/ols.quantity) as cost_dev_usd
 
 from fct.order_line_sale as ols
 left join dim.product_master as pm
@@ -33,12 +33,12 @@ left join fct.fx_rate as fx
   )
 insert into analytics.return select * from cte;
   call etl.log('return', current_date, 'sp_return','usuario'); -- SP dentro del SP return para dejar log
-	IF 
-	(select order_number, return_id, count(1)
-	from cte
-	group by order_number, return_id
-	having count(1) > 1) 
-	is NOT NULL THEN RAISE EXCEPTION 'ERROR';
-	END IF;
-END;
+	if 
+		(select order_number, return_id, count(1)
+		from cte
+		group by order_number, return_id
+		having count(1) > 1) 
+		is not null then raise exception 'error';
+	end if;
+end;
 $$;
