@@ -41,6 +41,8 @@ BEGIN
 	from stg.date
   )
 insert into dim.date(date, month, year, weekday, is_weekend, month_label, fiscal_year_label, fiscal_quarter_label, date_ly)
+	on conflict (date)
+	do nothing;
 select * from cte;
   call etl.log('dim.date',current_date, 'sp_dim_date','usuario'); -- SP dentro del SP date para dejar log
 END;
