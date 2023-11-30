@@ -10,7 +10,10 @@ BEGIN
 	where is_primary is true
   )
 insert into dim.supplier_product(product_id, name, is_primary)
-select * from cte where is_primary is true;
+select * from cte where is_primary is true
+  on conflict (product_id) do update
+  set name = excluded.name
+	, is_primary = excluded.is_primary;
   call etl.log('dim.supplier_product',current_date, 'sp_dim_supplier_product','usuario'); -- SP dentro del SP supplier_product para dejar log
 END;
 $$;
