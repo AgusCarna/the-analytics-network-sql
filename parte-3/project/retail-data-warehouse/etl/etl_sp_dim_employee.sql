@@ -18,6 +18,20 @@ BEGIN
 	    from stg.employees
   )
 insert into dim.employee(id, name, surname, start_date, end_date, duration, phone, country, province, store_id, position, active)
+  on conflict (id) do update
+  set 
+	  name = excluded.name
+	  , surname = excluded.surname
+	  , start_date = excluded.start_date
+	  , end_date = excluded.end_date 
+	  , duration = excluded.duration
+	  , phone = excluded.phone
+	  , country = excluded.country
+	  , province = excluded.province
+	  , store_id = excluded.store_id
+	  , position = excluded.position
+	  , active = excluded.active
+	  ;
 select * from cte;
   call etl.log('dim.employee',current_date, 'sp_dim_employee','usuario'); -- SP dentro del SP employee para dejar log
 END;
