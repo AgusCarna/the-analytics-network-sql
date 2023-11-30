@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select *
 	  from stg.shrinkage
- --   where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+ --   where date > (select max (year))
   )
 insert into fct.shrinkage (year, store_id, item_id, quantity)
 select * from cte;
