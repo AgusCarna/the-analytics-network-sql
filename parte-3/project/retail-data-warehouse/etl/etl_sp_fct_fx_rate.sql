@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select *
 	  from stg.monthly_average_fx_rate
-    where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+    where date > (select max (month))
   )
 insert into fct.fx_rate (month, fx_rate_usd_peso, fx_rate_usd_eur, fx_rate_usd_uru)
 select * from cte;
