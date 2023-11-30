@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select *
 	  from stg.return_movements
-    where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+    where date > (select max (date))
   )
 insert into fct.return_movements (order_id, return_id, item, quantity, movement_id, from_location, to_location, received_by, date)
 select * from cte;
