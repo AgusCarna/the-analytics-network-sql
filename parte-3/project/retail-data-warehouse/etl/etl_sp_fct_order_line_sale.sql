@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select *
 	  from stg.order_line_sale
-    where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+    where date > (select max (date))
   )
 insert into fct.order_line_sale (order_id, product_id, store_id, date, quantity, sale, 
             promotion, tax, credit, currency, pos, is_walkout, line_key)
