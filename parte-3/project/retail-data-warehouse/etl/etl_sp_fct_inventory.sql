@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select *
 	  from stg.inventory
-    where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+    where date > (select max (date))
   )
 insert into fct.inventory (date, store_id, item_id, initial, final)
 select * from cte;
