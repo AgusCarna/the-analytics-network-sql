@@ -7,7 +7,7 @@ BEGIN
   with cte as (
     select store_id, cast (date as date) as date, traffic
 	  from stg.super_store_count
-    where date > '2023-11-01' --> u otra fecha donde empiece me interese empezar a considerar
+    where date > (select max (date))
   )
 insert into fct.store_traffic(store_id, date, traffic)
 select * from cte;
